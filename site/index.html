@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>ProofReceipt — Verifiable Delivery Receipts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0e0d;
+        --bg-raise: #101614;
+        --panel: #131a18;
+        --panel-2: #17201d;
+        --line: #24302c;
+        --line-soft: #1c2623;
+        --ink: #e8efec;
+        --ink-dim: #a7b5b0;
+        --ink-faint: #6f807a;
+        --accent: #2fd08c;
+        --accent-deep: #123528;
+        --accent-ink: #06281a;
+        --amber: #e8b34b;
+        --red: #f26d6d;
+        --red-bg: #2b1518;
+        --green-bg: #0e2a1f;
+        --radius: 10px;
+        --radius-lg: 16px;
+        --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font);
+        font-size: 16px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--accent); }
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+      /* ---------- nav ---------- */
+      nav {
+        position: sticky; top: 0; z-index: 20;
+        background: rgba(10,14,13,.92);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .nav-in { display: flex; align-items: center; gap: 22px; height: 56px; }
+      .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); text-decoration: none; font-size: 16px; }
+      .brand .mark {
+        width: 24px; height: 24px; border-radius: 6px; background: var(--accent);
+        color: var(--accent-ink); display: grid; place-items: center; font-family: var(--mono); font-size: 14px; font-weight: 600;
+      }
+      .nav-links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; }
+      .nav-links a { color: var(--ink-dim); text-decoration: none; }
+      .nav-links a:hover { color: var(--ink); }
+      @media (max-width: 640px) { .nav-links a.hide-m { display: none; } }
+
+      /* ---------- hero ---------- */
+      .hero { padding: 64px 0 40px; }
+      .hero h1 {
+        font-size: clamp(32px, 5.4vw, 54px); line-height: 1.08; letter-spacing: -.025em;
+        margin: 0 0 18px; font-weight: 700; max-width: 820px;
+      }
+      .hero h1 .hl { color: var(--accent); }
+      .hero p.lede { font-size: clamp(17px, 2.2vw, 20px); color: var(--ink-dim); max-width: 680px; margin: 0 0 28px; }
+      .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--font); font-size: 15px; font-weight: 600;
+        padding: 12px 22px; border-radius: var(--radius); border: 1px solid transparent;
+        cursor: pointer; text-decoration: none; transition: background .15s, border-color .15s;
+      }
+      .btn-primary { background: var(--accent); color: var(--accent-ink); }
+      .btn-primary:hover { background: #45dda2; }
+      .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+      .btn-ghost:hover { border-color: var(--ink-faint); }
+      .btn-sm { padding: 8px 14px; font-size: 13.5px; }
+      .btn[disabled] { opacity: .55; cursor: wait; }
+
+      .stat-strip {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+        background: var(--line-soft); border: 1px solid var(--line-soft);
+        border-radius: var(--radius-lg); overflow: hidden; margin: 44px 0 8px;
+      }
+      .stat { background: var(--bg-raise); padding: 20px 22px; }
+      .stat .num { font-size: 30px; font-weight: 700; letter-spacing: -.02em; font-family: var(--mono); }
+      .stat .num em { font-style: normal; color: var(--accent); }
+      .stat .lbl { color: var(--ink-dim); font-size: 13.5px; margin-top: 4px; line-height: 1.45; }
+      @media (max-width: 720px) { .stat-strip { grid-template-columns: 1fr; } }
+
+      /* ---------- sections ---------- */
+      section.block { padding: 52px 0 8px; }
+      .sec-head { margin-bottom: 22px; }
+      .sec-head h2 { font-size: clamp(24px, 3.4vw, 32px); letter-spacing: -.02em; margin: 0 0 8px; font-weight: 700; }
+      .sec-head p { color: var(--ink-dim); margin: 0; max-width: 640px; }
+
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      @media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
+      .step { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); padding: 22px; }
+      .step .n { font-family: var(--mono); color: var(--accent); font-size: 13px; font-weight: 600; letter-spacing: .08em; }
+      .step h3 { margin: 10px 0 6px; font-size: 17px; }
+      .step p { margin: 0; color: var(--ink-dim); font-size: 14.5px; }
+
+      /* ---------- panels & forms ---------- */
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 26px; }
+      @media (max-width: 640px) { .panel { padding: 18px; } }
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+      label.f { display: block; font-size: 13px; font-weight: 600; color: var(--ink-dim); margin-bottom: 6px; letter-spacing: .01em; }
+      input[type="text"], input[type="number"], select, textarea {
+        width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--ink);
+        border-radius: var(--radius); padding: 11px 13px; font-family: var(--font); font-size: 15px;
+        outline: none;
+      }
+      input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,208,140,.15); }
+      textarea { resize: vertical; min-height: 96px; }
+      textarea.mono, input.mono { font-family: var(--mono); font-size: 13px; }
+      .field { margin-bottom: 16px; }
+      .amt-row { display: grid; grid-template-columns: 1fr 118px; gap: 10px; }
+
+      .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+      .tab {
+        font-family: var(--font); font-size: 13.5px; font-weight: 600; padding: 8px 16px;
+        border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); cursor: pointer;
+      }
+      .tab.active { background: var(--accent-deep); color: var(--accent); border-color: var(--accent); }
+      .drop {
+        border: 1.5px dashed var(--line); border-radius: var(--radius); padding: 22px; text-align: center;
+        color: var(--ink-dim); font-size: 14.5px; cursor: pointer; background: var(--bg);
+      }
+      .drop:hover, .drop.over { border-color: var(--accent); color: var(--ink); }
+      .drop .fname { font-family: var(--mono); font-size: 13px; color: var(--accent); word-break: break-all; }
+      .hint { font-size: 12.5px; color: var(--ink-faint); margin-top: 6px; }
+
+      /* ---------- receipt card ---------- */
+      .receipt-out { margin-top: 22px; display: none; }
+      .receipt-out.show { display: block; }
+      .receipt-card {
+        background: var(--panel-2); border: 1px solid var(--accent); border-radius: var(--radius-lg);
+        padding: 24px; position: relative; overflow: hidden;
+      }
+      .receipt-card::before {
+        content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--accent);
+      }
+      .rc-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+      .rc-badge { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .1em; color: var(--accent); background: var(--accent-deep); padding: 4px 10px; border-radius: 999px; }
+      .rc-id { font-family: var(--mono); font-size: 13px; color: var(--ink-dim); }
+      .rc-amount { font-size: 34px; font-weight: 700; letter-spacing: -.02em; margin: 14px 0 2px; }
+      .rc-amount span { color: var(--accent); font-size: 20px; }
+      .rc-job { font-size: 17px; font-weight: 600; }
+      .rc-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; margin: 16px 0; font-size: 14px; }
+      @media (max-width: 560px) { .rc-meta { grid-template-columns: 1fr; } }
+      .rc-meta .k { color: var(--ink-faint); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
+      .rc-meta .v { word-break: break-all; }
+      .hashbox { background: var(--bg); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 12px 14px; margin-top: 10px; }
+      .hashbox .k { color: var(--ink-faint); font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; }
+      .hashbox .h { font-family: var(--mono); font-size: 12.5px; word-break: break-all; color: var(--accent); }
+      .hashbox .h.plain { color: var(--ink-dim); }
+      .rc-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+      pre.json {
+        background: var(--bg); border: 1px solid var(--line-soft); border-radius: var(--radius);
+        padding: 14px; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+        overflow-x: auto; white-space: pre-wrap; word-break: break-all; color: var(--ink-dim); margin: 14px 0 0;
+        max-height: 300px; overflow-y: auto;
+      }
+
+      /* ---------- verdict ---------- */
+      .verdict { display: none; margin-top: 20px; border-radius: var(--radius-lg); padding: 22px; border: 1px solid; }
+      .verdict.show { display: block; }
+      .verdict.match { background: var(--green-bg); border-color: var(--accent); }
+      .verdict.nomatch { background: var(--red-bg); border-color: var(--red); }
+      .verdict.err { background: var(--panel-2); border-color: var(--amber); }
+      .verdict .vt { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+      .verdict.match .vt { color: var(--accent); }
+      .verdict.nomatch .vt { color: var(--red); }
+      .verdict.err .vt { color: var(--amber); font-size: 18px; }
+      .verdict p { margin: 8px 0 0; color: var(--ink-dim); font-size: 14.5px; }
+      .verdict .cmp { font-family: var(--mono); font-size: 12px; word-break: break-all; margin-top: 10px; color: var(--ink-dim); }
+
+      /* ---------- my receipts ---------- */
+      .totals { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+      .total-chip { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 18px; }
+      .total-chip .tv { font-family: var(--mono); font-size: 20px; font-weight: 600; }
+      .total-chip .tv span { color: var(--accent); font-size: 13px; }
+      .total-chip .tl { font-size: 12px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; }
+      .usage { font-size: 13.5px; color: var(--ink-dim); margin-bottom: 16px; }
+      .usage b { color: var(--ink); }
+      .usage .bar { height: 6px; background: var(--line-soft); border-radius: 3px; margin-top: 6px; max-width: 340px; overflow: hidden; }
+      .usage .bar i { display: block; height: 100%; background: var(--accent); }
+      .rlist { display: grid; gap: 12px; }
+      .ritem { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); padding: 18px 20px; display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+      .ritem .main { flex: 1 1 260px; min-width: 0; }
+      .ritem .job { font-weight: 600; font-size: 16px; }
+      .ritem .sub { color: var(--ink-dim); font-size: 13.5px; margin-top: 2px; }
+      .ritem .hash { font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); word-break: break-all; margin-top: 6px; }
+      .ritem .amt { font-family: var(--mono); font-weight: 600; font-size: 17px; white-space: nowrap; }
+      .ritem .amt span { color: var(--accent); font-size: 12.5px; }
+      .ritem .acts { display: flex; gap: 8px; width: 100%; }
+      .empty { border: 1.5px dashed var(--line); border-radius: var(--radius-lg); padding: 30px; text-align: center; color: var(--ink-dim); }
+      .del { color: var(--red); border-color: var(--line); background: transparent; }
+      .del:hover { border-color: var(--red); }
+      .viewbox { display: none; margin-top: 14px; }
+      .viewbox.show { display: block; }
+
+      /* ---------- pricing ---------- */
+      .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      @media (max-width: 860px) { .tiers { grid-template-columns: 1fr; } }
+      .tier { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--radius-lg); padding: 26px; display: flex; flex-direction: column; }
+      .tier.hot { border-color: var(--accent); background: var(--panel-2); }
+      .tier .tname { font-weight: 700; font-size: 17px; display: flex; justify-content: space-between; align-items: center; }
+      .tier .tag { font-size: 11px; font-family: var(--mono); letter-spacing: .08em; color: var(--accent-ink); background: var(--accent); padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+      .tier .price { font-size: 36px; font-weight: 700; letter-spacing: -.02em; margin: 12px 0 2px; }
+      .tier .price small { font-size: 14px; color: var(--ink-dim); font-weight: 400; }
+      .tier ul { list-style: none; padding: 0; margin: 16px 0 22px; flex: 1; }
+      .tier li { padding: 5px 0 5px 24px; position: relative; color: var(--ink-dim); font-size: 14.5px; }
+      .tier li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+      .paybox { display: none; margin-top: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; font-size: 13.5px; color: var(--ink-dim); }
+      .paybox.show { display: block; }
+      .paybox .addr { font-family: var(--mono); font-size: 12px; word-break: break-all; color: var(--accent); margin: 6px 0 10px; }
+
+      footer { border-top: 1px solid var(--line-soft); margin-top: 64px; padding: 30px 0 44px; color: var(--ink-faint); font-size: 13.5px; }
+      footer .frow { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+      .toast {
+        position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+        background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 14px;
+        padding: 11px 20px; border-radius: 999px; opacity: 0; pointer-events: none; transition: all .25s; z-index: 50;
+        box-shadow: 0 8px 30px rgba(0,0,0,.45);
+      }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .toast { transition: none; } }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="wrap nav-in">
+        <a class="brand" href="#top"><span class="mark">✓</span> ProofReceipt</a>
+        <div class="nav-links">
+          <a href="#create">Create</a>
+          <a href="#verify">Verify</a>
+          <a href="#receipts" class="hide-m">My Receipts</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="wrap" id="top">
+      <!-- ============ HERO ============ -->
+      <header class="hero">
+        <h1>Money moves instantly. <span class="hl">Proof of delivery doesn't.</span> Until now.</h1>
+        <p class="lede">
+          Freelancers and AI agents get paid in USDC in seconds — but nothing proves the work was actually
+          delivered. ProofReceipt binds the seller, the client, the job, the amount and the deliverable itself
+          into one SHA-256 fingerprint that anyone can re-verify, byte for byte, forever.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#create">Create a receipt — free</a>
+          <a class="btn btn-ghost" href="#verify">Verify a deliverable</a>
+        </div>
+
+        <div class="stat-strip">
+          <div class="stat">
+            <div class="num"><em>86.8%</em></div>
+            <div class="lbl">of rated AI agents had <b>no valid feedback</b> behind their reputation scores in a 2026 study of on-chain agent registries. Star ratings can be faked. A hash cannot.</div>
+          </div>
+          <div class="stat">
+            <div class="num">SHA<em>-256</em></div>
+            <div class="lbl">Every receipt fingerprints the exact deliverable bytes. Change one character and verification fails — that's the point.</div>
+          </div>
+          <div class="stat">
+            <div class="num"><em>$0</em></div>
+            <div class="lbl">infrastructure. Hashing runs in your browser with the Web Crypto API. No account, no upload to a server, no trust required.</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============ HOW IT WORKS ============ -->
+      <section class="block" id="how">
+        <div class="sec-head">
+          <h2>How it works</h2>
+          <p>Three steps between "I sent it, trust me" and cryptographic proof.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="n">STEP 01</div>
+            <h3>Deliver the work</h3>
+            <p>Finish the job as usual — a report, a contract audit, code, a dataset. Paste the text or drop the file into ProofReceipt before you send it.</p>
+          </div>
+          <div class="step">
+            <div class="n">STEP 02</div>
+            <h3>Seal the receipt</h3>
+            <p>ProofReceipt hashes the deliverable together with the seller, client, job and amount into a single SHA-256 receipt. Send the receipt JSON to your client alongside the work.</p>
+          </div>
+          <div class="step">
+            <div class="n">STEP 03</div>
+            <h3>Anyone verifies, anytime</h3>
+            <p>The client — or any platform, escrow or future buyer — re-runs the check with the file they received. A match proves it's byte-identical to what was delivered. No match, no argument.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CREATE ============ -->
+      <section class="block" id="create">
+        <div class="sec-head">
+          <h2>Create a receipt</h2>
+          <p>Fill in the job, attach the deliverable, and seal it. The fingerprint is computed locally in your browser — your file never leaves your device.</p>
+        </div>
+        <form class="panel" id="createForm" autocomplete="off">
+          <div class="grid-2">
+            <div class="field">
+              <label class="f" for="seller">Seller handle</label>
+              <input type="text" id="seller" placeholder="@NenzyBrown" required />
+            </div>
+            <div class="field">
+              <label class="f" for="client">Client name</label>
+              <input type="text" id="client" placeholder="Acme Protocol Ltd" required />
+            </div>
+          </div>
+          <div class="field">
+            <label class="f" for="job">Job title</label>
+            <input type="text" id="job" placeholder="Smart contract security review — vault contracts" required />
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="f" for="amount">Amount</label>
+              <div class="amt-row">
+                <input type="number" id="amount" placeholder="150" min="0" step="any" required />
+                <select id="currency" aria-label="Currency">
+                  <option value="USDC" selected>USDC</option>
+                  <option value="USDT">USDT</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label class="f" for="wallet">Payout wallet address</label>
+              <input type="text" id="wallet" class="mono" value="0x48E78fFC3f02A65c6A9718b4dc293ae14cBb7985" required />
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:4px;">
+            <label class="f">Deliverable</label>
+            <div class="tabs" role="tablist">
+              <button type="button" class="tab active" id="tabTextC">Paste text</button>
+              <button type="button" class="tab" id="tabFileC">Upload file</button>
+            </div>
+            <div id="paneTextC">
+              <textarea id="delivText" placeholder="Paste the exact deliverable — report text, code, message, dataset… Verification later requires the identical text, character for character."></textarea>
+            </div>
+            <div id="paneFileC" style="display:none;">
+              <div class="drop" id="dropC" tabindex="0" role="button" aria-label="Upload deliverable file">
+                <span id="dropCLabel">Drop the deliverable file here, or tap to choose it</span>
+              </div>
+              <input type="file" id="fileC" hidden />
+              <div class="hint">The file's raw bytes are hashed locally. Nothing is uploaded anywhere.</div>
+            </div>
+          </div>
+
+          <div style="margin-top:18px;">
+            <button type="submit" class="btn btn-primary" id="createBtn">Seal receipt &amp; compute SHA-256</button>
+          </div>
+
+          <div class="receipt-out" id="receiptOut"></div>
+        </form>
+      </section>
+
+      <!-- ============ VERIFY ============ -->
+      <section class="block" id="verify">
+        <div class="sec-head">
+          <h2>Verify a deliverable</h2>
+          <p>Received work with a ProofReceipt? Paste the receipt and provide the deliverable exactly as you received it. If a single byte differs, it won't match.</p>
+        </div>
+        <div class="panel">
+          <div class="field">
+            <label class="f" for="verifyInput">Receipt JSON — or a receipt ID / hash from this browser</label>
+            <textarea id="verifyInput" class="mono" placeholder='Paste the full receipt JSON, e.g. {"product":"ProofReceipt","version":1, …}' style="min-height:110px;"></textarea>
+            <div class="hint">A bare receipt ID or hash works when the receipt was created in this browser (it's looked up in My Receipts).</div>
+          </div>
+          <div class="field" style="margin-bottom:4px;">
+            <label class="f">Deliverable to check</label>
+            <div class="tabs" role="tablist">
+              <button type="button" class="tab active" id="tabTextV">Paste text</button>
+              <button type="button" class="tab" id="tabFileV">Upload file</button>
+            </div>
+            <div id="paneTextV">
+              <textarea id="verifyText" placeholder="Paste the deliverable exactly as received."></textarea>
+            </div>
+            <div id="paneFileV" style="display:none;">
+              <div class="drop" id="dropV" tabindex="0" role="button" aria-label="Upload file to verify">
+                <span id="dropVLabel">Drop the received file here, or tap to choose it</span>
+              </div>
+              <input type="file" id="fileV" hidden />
+            </div>
+          </div>
+          <div style="margin-top:18px;">
+            <button type="button" class="btn btn-primary" id="verifyBtn">Recompute &amp; verify</button>
+          </div>
+          <div class="verdict" id="verdict"></div>
+        </div>
+      </section>
+
+      <!-- ============ MY RECEIPTS ============ -->
+      <section class="block" id="receipts">
+        <div class="sec-head">
+          <h2>My Receipts</h2>
+          <p>Your evidence-backed work profile: every delivery sealed in this browser, with the total value you've provably delivered. Share any receipt JSON with a client or platform as proof of a completed job.</p>
+        </div>
+        <div class="usage" id="usageLine"></div>
+        <div class="totals" id="totals"></div>
+        <div class="rlist" id="rlist"></div>
+      </section>
+
+      <!-- ============ PRICING ============ -->
+      <section class="block" id="pricing">
+        <div class="sec-head">
+          <h2>Pricing</h2>
+          <p>Verification is free forever — anyone can check a receipt without an account. You only pay to create receipts at volume.</p>
+        </div>
+        <div class="tiers">
+          <div class="tier">
+            <div class="tname">Free</div>
+            <div class="price">$0</div>
+            <ul>
+              <li>5 receipts included</li>
+              <li>Text &amp; file deliverables</li>
+              <li>Full SHA-256 receipt JSON</li>
+              <li>Unlimited free verification</li>
+              <li>Receipts stored in your browser</li>
+            </ul>
+            <a class="btn btn-ghost" href="#create">Start free</a>
+          </div>
+          <div class="tier hot">
+            <div class="tname">Pro <span class="tag">FOR SELLERS</span></div>
+            <div class="price">$9<small> / month, paid in USDC</small></div>
+            <ul>
+              <li>Unlimited receipts</li>
+              <li>Evidence-backed public work profile</li>
+              <li>Total-value-proven totals by currency</li>
+              <li>Priority support from the founder</li>
+              <li>Built for freelancers &amp; AI agents selling daily</li>
+            </ul>
+            <button type="button" class="btn btn-primary" id="proBtn">Go Pro — pay with USDC</button>
+            <div class="paybox" id="proPay">
+              Send <b>9 USDC</b> (Base or Ethereum mainnet) to the founder wallet, then email your wallet address and ProofReceipt seller handle to activate Pro on your profile.
+              <div class="addr">0x48E78fFC3f02A65c6A9718b4dc293ae14cBb7985</div>
+              <button type="button" class="btn btn-ghost btn-sm" data-copy="0x48E78fFC3f02A65c6A9718b4dc293ae14cBb7985">Copy wallet address</button>
+              <a class="btn btn-ghost btn-sm" href="mailto:njakoiemmanuel10@gmail.com?subject=ProofReceipt%20Pro%20activation&body=Hi%20Nenzy%2C%0A%0AI%20sent%209%20USDC%20for%20ProofReceipt%20Pro.%0AMy%20sending%20wallet%3A%20%0AMy%20seller%20handle%3A%20">Email activation details</a>
+            </div>
+          </div>
+          <div class="tier">
+            <div class="tname">Teams</div>
+            <div class="price">$29<small> / month</small></div>
+            <ul>
+              <li>Everything in Pro</li>
+              <li>Client acceptance flow — clients countersign delivery</li>
+              <li>API access for platforms &amp; agent frameworks</li>
+              <li>Shared team receipt ledger</li>
+              <li>Escrow &amp; marketplace integrations</li>
+            </ul>
+            <a class="btn btn-ghost" href="mailto:njakoiemmanuel10@gmail.com?subject=ProofReceipt%20Teams%20waitlist&body=Hi%20Nenzy%2C%0A%0APlease%20add%20me%20to%20the%20ProofReceipt%20Teams%20waitlist.%0AName%20%2F%20team%3A%20%0AUse%20case%3A%20">Join the waitlist</a>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="frow">
+          <div>Built by <b style="color:var(--ink-dim)">NenzyBrown</b>, Dubai — AI &amp; Blockchain specialist.</div>
+          <div>ProofReceipt · SHA-256 delivery receipts · Verification is always free.</div>
+          <div><a href="https://fazier.com" target="_blank" rel="noopener"><img src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=light" alt="Launched on Fazier" style="height:28px;width:auto;vertical-align:middle"></a></div>
+        </div>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+      (function () {
+        "use strict";
+        var LS_KEY = "proofreceipt.receipts.v1";
+        var FOUNDER_WALLET = "0x48E78fFC3f02A65c6A9718b4dc293ae14cBb7985";
+        var enc = new TextEncoder();
+
+        function $(id) { return document.getElementById(id); }
+        function toast(msg) {
+          var t = $("toast"); t.textContent = msg; t.classList.add("show");
+          setTimeout(function () { t.classList.remove("show"); }, 2200);
+        }
+        function sha256Hex(buffer) {
+          return crypto.subtle.digest("SHA-256", buffer).then(function (digest) {
+            var bytes = new Uint8Array(digest), hex = "";
+            for (var i = 0; i < bytes.length; i++) {
+              var h = bytes[i].toString(16); if (h.length === 1) h = "0" + h; hex += h;
+            }
+            return hex;
+          });
+        }
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+        function copyText(text, label) {
+          function done() { toast(label || "Copied to clipboard"); }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+          } else { fallback(); }
+          function fallback() {
+            var ta = document.createElement("textarea");
+            ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand("copy"); done(); } catch (e) { toast("Copy failed — select the text manually"); }
+            document.body.removeChild(ta);
+          }
+        }
+
+        /* ---------- canonical receipt ---------- */
+        function canonicalString(r) {
+          return [
+            "proofreceipt:v1",
+            "seller:" + r.seller,
+            "client:" + r.client,
+            "job:" + r.job,
+            "amount:" + r.amount,
+            "currency:" + r.currency,
+            "wallet:" + r.wallet,
+            "created:" + r.created,
+            "deliverable_type:" + r.deliverable.type,
+            "deliverable_name:" + (r.deliverable.name || ""),
+            "deliverable_sha256:" + r.deliverable.sha256
+          ].join("\n");
+        }
+        function computeReceiptHash(r) {
+          return sha256Hex(enc.encode(canonicalString(r)));
+        }
+        function makeId(createdIso) {
+          var rand = "";
+          var arr = new Uint32Array(2); crypto.getRandomValues(arr);
+          rand = (arr[0].toString(36) + arr[1].toString(36)).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+          var d = new Date(createdIso);
+          var ymd = d.getUTCFullYear().toString() +
+            String(d.getUTCMonth() + 1).padStart(2, "0") +
+            String(d.getUTCDate()).padStart(2, "0");
+          return "PR-" + ymd + "-" + (rand || "000000");
+        }
+
+        /* ---------- storage ---------- */
+        function loadReceipts() {
+          try {
+            var raw = localStorage.getItem(LS_KEY);
+            var arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr : [];
+          } catch (e) { return []; }
+        }
+        function saveReceipts(arr) {
+          try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch (e) { /* private mode: list stays in memory for the session */ }
+        }
+
+        /* ---------- deliverable input (shared by create & verify) ---------- */
+        function setupDeliverable(prefix) {
+          var state = { mode: "text", file: null };
+          var tabT = $("tabText" + prefix), tabF = $("tabFile" + prefix);
+          var paneT = $("paneText" + prefix), paneF = $("paneFile" + prefix);
+          var drop = $("drop" + prefix), fileInput = $("file" + prefix), dropLabel = $("drop" + prefix + "Label");
+          function setMode(m) {
+            state.mode = m;
+            tabT.classList.toggle("active", m === "text");
+            tabF.classList.toggle("active", m === "file");
+            paneT.style.display = m === "text" ? "" : "none";
+            paneF.style.display = m === "file" ? "" : "none";
+          }
+          tabT.addEventListener("click", function () { setMode("text"); });
+          tabF.addEventListener("click", function () { setMode("file"); });
+          drop.addEventListener("click", function () { fileInput.click(); });
+          drop.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+          drop.addEventListener("dragover", function (e) { e.preventDefault(); drop.classList.add("over"); });
+          drop.addEventListener("dragleave", function () { drop.classList.remove("over"); });
+          drop.addEventListener("drop", function (e) {
+            e.preventDefault(); drop.classList.remove("over");
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+          });
+          fileInput.addEventListener("change", function () {
+            if (fileInput.files && fileInput.files[0]) setFile(fileInput.files[0]);
+          });
+          function setFile(f) {
+            state.file = f;
+            dropLabel.innerHTML = 'Selected: <span class="fname"></span> (' + f.size.toLocaleString() + ' bytes) — tap to change';
+            dropLabel.querySelector(".fname").textContent = f.name;
+          }
+          state.getDeliverable = function (textElId) {
+            if (state.mode === "text") {
+              var text = $(textElId).value;
+              if (!text) return Promise.reject(new Error("Paste the deliverable text first — an empty deliverable can't be sealed or checked."));
+              return sha256Hex(enc.encode(text)).then(function (h) {
+                return { type: "text", name: "", sha256: h, bytes: enc.encode(text).length };
+              });
+            }
+            if (!state.file) return Promise.reject(new Error("Choose the deliverable file first."));
+            var f = state.file;
+            return f.arrayBuffer().then(function (buf) {
+              return sha256Hex(buf).then(function (h) {
+                return { type: "file", name: f.name, sha256: h, bytes: f.size };
+              });
+            });
+          };
+          return state;
+        }
+        var createDeliv = setupDeliverable("C");
+        var verifyDeliv = setupDeliverable("V");
+
+        /* ---------- receipt card rendering ---------- */
+        function fmtAmount(a) {
+          var n = parseFloat(a);
+          if (isNaN(n)) return esc(a);
+          return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
+        }
+        function receiptCardHTML(r) {
+          return '' +
+          '<div class="receipt-card">' +
+            '<div class="rc-top"><span class="rc-badge">✓ SEALED · SHA-256 VERIFIED FORMAT</span><span class="rc-id">' + esc(r.id) + '</span></div>' +
+            '<div class="rc-amount">' + fmtAmount(r.amount) + ' <span>' + esc(r.currency) + '</span></div>' +
+            '<div class="rc-job">' + esc(r.job) + '</div>' +
+            '<div class="rc-meta">' +
+              '<div><div class="k">Seller</div><div class="v">' + esc(r.seller) + '</div></div>' +
+              '<div><div class="k">Client</div><div class="v">' + esc(r.client) + '</div></div>' +
+              '<div><div class="k">Payout wallet</div><div class="v" style="font-family:var(--mono);font-size:12.5px;">' + esc(r.wallet) + '</div></div>' +
+              '<div><div class="k">Sealed (UTC)</div><div class="v">' + esc(new Date(r.created).toUTCString()) + '</div></div>' +
+              '<div><div class="k">Deliverable</div><div class="v">' + (r.deliverable.type === "file" ? esc(r.deliverable.name) + " · " : "Pasted text · ") + r.deliverable.bytes.toLocaleString() + ' bytes</div></div>' +
+            '</div>' +
+            '<div class="hashbox"><div class="k">Deliverable SHA-256 fingerprint</div><div class="h plain">' + esc(r.deliverable.sha256) + '</div></div>' +
+            '<div class="hashbox"><div class="k">Receipt hash (all fields + deliverable)</div><div class="h">' + esc(r.receipt_hash) + '</div></div>' +
+            '<div class="rc-actions">' +
+              '<button type="button" class="btn btn-primary btn-sm" data-copyreceipt="' + esc(r.id) + '">Copy receipt JSON</button>' +
+              '<a class="btn btn-ghost btn-sm" href="#verify">Verify it now →</a>' +
+            '</div>' +
+            '<pre class="json">' + esc(JSON.stringify(r.json, null, 2)) + '</pre>' +
+          '</div>';
+        }
+        function buildReceiptJSON(r) {
+          return {
+            product: "ProofReceipt",
+            version: 1,
+            id: r.id,
+            seller: r.seller,
+            client: r.client,
+            job: r.job,
+            amount: r.amount,
+            currency: r.currency,
+            wallet: r.wallet,
+            created: r.created,
+            deliverable: {
+              type: r.deliverable.type,
+              name: r.deliverable.name || null,
+              bytes: r.deliverable.bytes,
+              sha256: r.deliverable.sha256
+            },
+            receipt_hash: r.receipt_hash,
+            verify_at: "Open ProofReceipt → Verify, paste this JSON and provide the deliverable exactly as received."
+          };
+        }
+
+        document.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-copyreceipt]");
+          if (btn) {
+            var all = loadReceipts();
+            var found = null;
+            for (var i = 0; i < all.length; i++) if (all[i].id === btn.getAttribute("data-copyreceipt")) found = all[i];
+            if (found) copyText(JSON.stringify(found.json, null, 2), "Receipt JSON copied");
+            return;
+          }
+          var cp = e.target.closest("[data-copy]");
+          if (cp) copyText(cp.getAttribute("data-copy"), "Copied to clipboard");
+        });
+
+        /* ---------- create ---------- */
+        $("createForm").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var btn = $("createBtn");
+          btn.disabled = true; btn.textContent = "Hashing…";
+          createDeliv.getDeliverable("delivText").then(function (deliv) {
+            var created = new Date().toISOString();
+            var r = {
+              id: makeId(created),
+              seller: $("seller").value.trim(),
+              client: $("client").value.trim(),
+              job: $("job").value.trim(),
+              amount: $("amount").value.trim(),
+              currency: $("currency").value,
+              wallet: $("wallet").value.trim(),
+              created: created,
+              deliverable: { type: deliv.type, name: deliv.name, bytes: deliv.bytes, sha256: deliv.sha256 }
+            };
+            return computeReceiptHash(r).then(function (hash) {
+              r.receipt_hash = hash;
+              r.json = buildReceiptJSON(r);
+              var all = loadReceipts();
+              all.unshift(r);
+              saveReceipts(all);
+              var out = $("receiptOut");
+              out.innerHTML = receiptCardHTML(r);
+              out.classList.add("show");
+              out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              renderMyReceipts();
+              toast("Receipt sealed: " + r.id);
+            });
+          }).catch(function (err) {
+            toast(err.message || "Could not create the receipt");
+          }).then(function () {
+            btn.disabled = false; btn.textContent = "Seal receipt & compute SHA-256";
+          });
+        });
+
+        /* ---------- verify ---------- */
+        function showVerdict(kind, title, bodyHTML) {
+          var v = $("verdict");
+          v.className = "verdict show " + kind;
+          v.innerHTML = '<div class="vt">' + esc(title) + '</div>' + bodyHTML;
+          v.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+        $("verifyBtn").addEventListener("click", function () {
+          var raw = $("verifyInput").value.trim();
+          if (!raw) {
+            showVerdict("err", "No receipt provided", "<p>Paste the receipt JSON, or enter a receipt ID / hash created in this browser.</p>");
+            return;
+          }
+          var receipt = null;
+          if (raw.charAt(0) === "{") {
+            try {
+              var parsed = JSON.parse(raw);
+              receipt = {
+                id: parsed.id, seller: parsed.seller, client: parsed.client, job: parsed.job,
+                amount: String(parsed.amount), currency: parsed.currency, wallet: parsed.wallet,
+                created: parsed.created,
+                deliverable: {
+                  type: parsed.deliverable && parsed.deliverable.type,
+                  name: (parsed.deliverable && parsed.deliverable.name) || "",
+                  bytes: parsed.deliverable && parsed.deliverable.bytes,
+                  sha256: parsed.deliverable && parsed.deliverable.sha256
+                },
+                receipt_hash: parsed.receipt_hash
+              };
+              if (!receipt.receipt_hash || !receipt.deliverable.sha256) throw new Error("missing fields");
+            } catch (err) {
+              showVerdict("err", "That receipt JSON couldn't be read", "<p>Check you pasted the complete receipt JSON, including <b>deliverable.sha256</b> and <b>receipt_hash</b>.</p>");
+              return;
+            }
+          } else {
+            var all = loadReceipts();
+            for (var i = 0; i < all.length; i++) {
+              if (all[i].id === raw || all[i].receipt_hash === raw) { receipt = all[i]; break; }
+            }
+            if (!receipt) {
+              showVerdict("err", "Receipt not found in this browser",
+                "<p>No saved receipt matches that ID or hash. If the receipt was created on another device, paste the full receipt JSON instead — verification works from the JSON alone.</p>");
+              return;
+            }
+          }
+          var btn = $("verifyBtn"); btn.disabled = true; btn.textContent = "Recomputing…";
+          verifyDeliv.getDeliverable("verifyText").then(function (deliv) {
+            var deliverableMatch = deliv.sha256 === receipt.deliverable.sha256 && deliv.type === receipt.deliverable.type;
+            return computeReceiptHash(receipt).then(function (recomputed) {
+              var hashMatch = recomputed === receipt.receipt_hash;
+              var detail =
+                '<div class="cmp">Receipt: ' + esc(receipt.id || "—") + ' · ' + esc(receipt.job || "") + ' · ' + esc(receipt.amount || "") + ' ' + esc(receipt.currency || "") + '<br>' +
+                'Deliverable SHA-256 from receipt: ' + esc(receipt.deliverable.sha256) + '<br>' +
+                'Deliverable SHA-256 recomputed:&nbsp;&nbsp;' + esc(deliv.sha256) + '<br>' +
+                'Receipt hash recomputed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + esc(recomputed) + '</div>';
+              if (deliverableMatch && hashMatch) {
+                showVerdict("match", "✓ MATCH — delivery proven",
+                  "<p>This deliverable is <b>byte-identical</b> to the one sealed in receipt " + esc(receipt.id || "") +
+                  " by " + esc(receipt.seller || "the seller") + " for " + esc(receipt.client || "the client") +
+                  " on " + esc(receipt.created ? new Date(receipt.created).toUTCString() : "") + ". The receipt fields also re-hash exactly — nothing was altered.</p>" + detail);
+              } else {
+                var why = !deliverableMatch
+                  ? "<p>The deliverable you provided hashes differently from the sealed fingerprint — it is <b>not</b> the file or text that was delivered under this receipt. Even one changed character, space or line break causes this.</p>"
+                  : "<p>The deliverable matches, but the receipt fields don't re-hash to the receipt hash — the receipt itself was altered after sealing.</p>";
+                showVerdict("nomatch", "✗ NO MATCH", why + detail);
+              }
+            });
+          }).catch(function (err) {
+            showVerdict("err", "Nothing to verify yet", "<p>" + esc(err.message || "Provide the deliverable to check.") + "</p>");
+          }).then(function () {
+            btn.disabled = false; btn.textContent = "Recompute & verify";
+          });
+        });
+
+        /* ---------- my receipts ---------- */
+        function renderMyReceipts() {
+          var all = loadReceipts();
+          var usage = $("usageLine");
+          var pct = Math.min(100, (all.length / 5) * 100);
+          usage.innerHTML = "<b>" + all.length + " of 5</b> free-plan receipts used in this browser" +
+            (all.length >= 5 ? ' — you\'re past the free tier. <a href="#pricing">Go Pro for unlimited receipts.</a>' : "") +
+            '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+
+          var totals = {};
+          all.forEach(function (r) {
+            var n = parseFloat(r.amount);
+            if (!isNaN(n)) totals[r.currency] = (totals[r.currency] || 0) + n;
+          });
+          var tEl = $("totals");
+          var keys = Object.keys(totals);
+          if (!keys.length) {
+            tEl.innerHTML = "";
+          } else {
+            tEl.innerHTML = keys.map(function (c) {
+              return '<div class="total-chip"><div class="tv">' + totals[c].toLocaleString(undefined, { maximumFractionDigits: 6 }) + ' <span>' + esc(c) + '</span></div><div class="tl">Total value proven</div></div>';
+            }).join("") +
+            '<div class="total-chip"><div class="tv">' + all.length + '</div><div class="tl">Deliveries sealed</div></div>';
+          }
+
+          var list = $("rlist");
+          if (!all.length) {
+            list.innerHTML = '<div class="empty">No receipts yet in this browser.<br /><a href="#create">Seal your first delivery →</a><br /><span style="font-size:13px;">Your first sealed receipt is the start of a work history nobody can fake.</span></div>';
+            return;
+          }
+          list.innerHTML = all.map(function (r) {
+            return '<div class="ritem">' +
+              '<div class="main">' +
+                '<div class="job">' + esc(r.job) + '</div>' +
+                '<div class="sub">' + esc(r.seller) + ' → ' + esc(r.client) + ' · ' + esc(new Date(r.created).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })) + ' · ' + esc(r.id) + '</div>' +
+                '<div class="hash">SHA-256 ' + esc(r.receipt_hash) + '</div>' +
+                '<div class="viewbox" id="view-' + esc(r.id) + '"><pre class="json">' + esc(JSON.stringify(r.json, null, 2)) + '</pre></div>' +
+              '</div>' +
+              '<div class="amt">' + fmtAmount(r.amount) + ' <span>' + esc(r.currency) + '</span></div>' +
+              '<div class="acts">' +
+                '<button type="button" class="btn btn-ghost btn-sm" data-view="' + esc(r.id) + '">View JSON</button>' +
+                '<button type="button" class="btn btn-ghost btn-sm" data-copyreceipt="' + esc(r.id) + '">Copy receipt</button>' +
+                '<button type="button" class="btn btn-ghost btn-sm" data-verify-saved="' + esc(r.id) + '">Verify</button>' +
+                '<button type="button" class="btn btn-sm del" data-del="' + esc(r.id) + '">Delete</button>' +
+              '</div>' +
+            '</div>';
+          }).join("");
+        }
+        document.addEventListener("click", function (e) {
+          var v = e.target.closest("[data-view]");
+          if (v) {
+            var box = $("view-" + v.getAttribute("data-view"));
+            if (box) { box.classList.toggle("show"); v.textContent = box.classList.contains("show") ? "Hide JSON" : "View JSON"; }
+            return;
+          }
+          var vs = e.target.closest("[data-verify-saved]");
+          if (vs) {
+            var all = loadReceipts();
+            for (var i = 0; i < all.length; i++) {
+              if (all[i].id === vs.getAttribute("data-verify-saved")) {
+                $("verifyInput").value = JSON.stringify(all[i].json, null, 2);
+                document.getElementById("verify").scrollIntoView({ behavior: "smooth" });
+                toast("Receipt loaded — now provide the deliverable");
+              }
+            }
+            return;
+          }
+          var d = e.target.closest("[data-del]");
+          if (d) {
+            if (d.getAttribute("data-armed") === "1") {
+              var rest = loadReceipts().filter(function (r) { return r.id !== d.getAttribute("data-del"); });
+              saveReceipts(rest);
+              renderMyReceipts();
+              toast("Receipt deleted");
+            } else {
+              d.setAttribute("data-armed", "1");
+              d.textContent = "Tap again to confirm";
+              setTimeout(function () { if (d.isConnected) { d.removeAttribute("data-armed"); d.textContent = "Delete"; } }, 2600);
+            }
+          }
+        });
+
+        /* ---------- pricing ---------- */
+        $("proBtn").addEventListener("click", function () {
+          var p = $("proPay");
+          p.classList.toggle("show");
+          if (p.classList.contains("show")) p.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+
+        renderMyReceipts();
+      })();
+    </script>
+  </body>
+</html>
